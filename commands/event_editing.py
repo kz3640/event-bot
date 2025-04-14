@@ -4,7 +4,7 @@ Commands for editing event details
 import discord
 from discord import app_commands
 import logging
-from utils.thread_utils import get_parent_message, update_thread_name
+from utils.channel_utils import update_channel_name
 from utils.formatting import format_date_with_day
 import re
 
@@ -15,31 +15,32 @@ def register_event_editing(tree: app_commands.CommandTree, guild: discord.Object
     
     @tree.command(
         name="change_name",
-        description="Change the name of the event in the current thread",
+        description="Change the name of the event in the current channel",
         guild=guild
     )
     @app_commands.describe(
         new_name="New name of event",
     )
     async def change_name(interaction: discord.Interaction, new_name: str) -> None:
-        """Change the event name in both message and thread"""
-        if not isinstance(interaction.channel, discord.Thread):
-            await interaction.response.send_message("This command can only be used in event threads.", ephemeral=True)
+        """Change the event name in both message and channel name"""
+        if isinstance(interaction.channel, discord.Thread):
+            await interaction.response.send_message("This command cannot be used in threads.", ephemeral=True)
             return
             
         try:
-            # Get parent message ID from thread
-            thread = interaction.channel
-            parent_message = await get_parent_message(thread)
+            # Get the event message - first message in channel
+            channel = interaction.channel
+            messages = [msg async for msg in channel.history(limit=1, oldest_first=True)]
+            event_message = messages[0] if messages else None
             
-            if not parent_message:
+            if not event_message:
                 await interaction.response.send_message("Could not find the event message.", ephemeral=True)
                 return
                 
             # Update event message
-            current_content = parent_message.content
+            current_content = event_message.content
             
-            # Extract date for thread name update
+            # Extract date for channel name update
             date_start = current_content.find('**:date: Date:**') + len('**:date: Date:**')
             date_end = current_content.find('**', date_start)
             current_date = current_content[date_start:date_end].strip()
@@ -74,12 +75,12 @@ def register_event_editing(tree: app_commands.CommandTree, guild: discord.Object
                 updated_content = current_content[:first_bold_start] + f"**{emoji} {new_name}**" + current_content[first_bold_end + 2:]
             
             # Update the message
-            await parent_message.edit(content=updated_content)
+            await event_message.edit(content=updated_content)
             
-            # Update thread name
-            await update_thread_name(thread, new_name, current_date.split(',')[-1].strip())
+            # Update channel name
+            await update_channel_name(channel, new_name, current_date.split(',')[-1].strip())
             
-            await interaction.response.send_message(f"Title updated: {new_name}", ephemeral=True)
+            await interaction.response.send_message(f"Channel updated: {new_name}", ephemeral=True)
             
         except discord.HTTPException as e:
             logger.error(f"Failed to update event name: {e}")
@@ -87,31 +88,32 @@ def register_event_editing(tree: app_commands.CommandTree, guild: discord.Object
 
     @tree.command(
         name="change_date",
-        description="Change the date/time of the event in the current thread",
+        description="Change the date/time of the event in the current channel",
         guild=guild
     )
     @app_commands.describe(
         new_date="New date/time of the event",
     )
     async def change_date(interaction: discord.Interaction, new_date: str) -> None:
-        """Change the event date in both message and thread name"""
-        if not isinstance(interaction.channel, discord.Thread):
-            await interaction.response.send_message("This command can only be used in event threads.", ephemeral=True)
+        """Change the event date in both message and channel name"""
+        if isinstance(interaction.channel, discord.Thread):
+            await interaction.response.send_message("This command cannot be used in threads.", ephemeral=True)
             return
             
         try:
-            # Get parent message ID from thread
-            thread = interaction.channel
-            parent_message = await get_parent_message(thread)
+            # Get parent message ID from channel
+            channel = interaction.channel
+            messages = [msg async for msg in channel.history(limit=1, oldest_first=True)]
+            event_message = messages[0] if messages else None
             
-            if not parent_message:
+            if not event_message:
                 await interaction.response.send_message("Could not find the event message.", ephemeral=True)
                 return
                 
             # Update event message
-            current_content = parent_message.content
+            current_content = event_message.content
             
-            # Extract event name for thread name update
+            # Extract event name for channel name update
             name_start = current_content.find('**') + 2
             name_end = current_content.find('**', name_start)
             
@@ -128,13 +130,13 @@ def register_event_editing(tree: app_commands.CommandTree, guild: discord.Object
             updated_content = current_content[:start_index] + ' ' + formatted_date + current_content[end_index:]
             
             # Update the message
-            await parent_message.edit(content=updated_content)
+            await event_message.edit(content=updated_content)
             
-            # Use the non-day part for the thread name
-            thread_date = new_date.strip()
+            # Use the non-day part for the channel name
+            channel_date = new_date.strip()
             
-            # Update thread name
-            await update_thread_name(thread, current_name, thread_date)
+            # Update channel name
+            await update_channel_name(channel, current_name, channel_date)
             
             await interaction.response.send_message(f"Date updated: {formatted_date}", ephemeral=True)
             
@@ -144,7 +146,7 @@ def register_event_editing(tree: app_commands.CommandTree, guild: discord.Object
 
     @tree.command(
         name="change_location",
-        description="Change the location of the event in the current thread",
+        description="Change the location of the event in the current channel",
         guild=guild
     )
     @app_commands.describe(
@@ -152,27 +154,28 @@ def register_event_editing(tree: app_commands.CommandTree, guild: discord.Object
     )
     async def change_location(interaction: discord.Interaction, new_location: str) -> None:
         """Change the event location"""
-        if not isinstance(interaction.channel, discord.Thread):
-            await interaction.response.send_message("This command can only be used in event threads.", ephemeral=True)
+        if isinstance(interaction.channel, discord.Thread):
+            await interaction.response.send_message("This command cannot be used in threads.", ephemeral=True)
             return
             
         try:
             # Get parent message
-            thread = interaction.channel
-            parent_message = await get_parent_message(thread)
+            channel = interaction.channel
+            messages = [msg async for msg in channel.history(limit=1, oldest_first=True)]
+            event_message = messages[0] if messages else None
             
-            if not parent_message:
+            if not event_message:
                 await interaction.response.send_message("Could not find the event message.", ephemeral=True)
                 return
                 
             # Update location in message
-            current_content = parent_message.content
+            current_content = event_message.content
             start_index = current_content.find('**:round_pushpin: Location:**') + len('**:round_pushpin: Location:**')
             end_index = current_content.find('**', start_index) - 1
             updated_content = current_content[:start_index] + ' ' + new_location + current_content[end_index:]
             
             # Update the message
-            await parent_message.edit(content=updated_content)
+            await event_message.edit(content=updated_content)
             await interaction.response.send_message(f"Location updated: {new_location}", ephemeral=True)
             
         except discord.HTTPException as e:
@@ -181,7 +184,7 @@ def register_event_editing(tree: app_commands.CommandTree, guild: discord.Object
 
     @tree.command(
         name="change_price",
-        description="Change the price of the event in the current thread",
+        description="Change the price of the event in the current channel",
         guild=guild
     )
     @app_commands.describe(
@@ -189,21 +192,22 @@ def register_event_editing(tree: app_commands.CommandTree, guild: discord.Object
     )
     async def change_price(interaction: discord.Interaction, new_price: str) -> None:
         """Change the event price"""
-        if not isinstance(interaction.channel, discord.Thread):
-            await interaction.response.send_message("This command can only be used in event threads.", ephemeral=True)
+        if isinstance(interaction.channel, discord.Thread):
+            await interaction.response.send_message("This command cannot be used in threads.", ephemeral=True)
             return
             
         try:
             # Get parent message
-            thread = interaction.channel
-            parent_message = await get_parent_message(thread)
+            channel = interaction.channel
+            messages = [msg async for msg in channel.history(limit=1, oldest_first=True)]
+            event_message = messages[0] if messages else None
             
-            if not parent_message:
+            if not event_message:
                 await interaction.response.send_message("Could not find the event message.", ephemeral=True)
                 return
                 
             # Update price in message
-            current_content = parent_message.content
+            current_content = event_message.content
             start_index = current_content.find('**:dollar: Price:**') + len('**:dollar: Price:**')
             
             # Find the end of the price field
@@ -214,7 +218,7 @@ def register_event_editing(tree: app_commands.CommandTree, guild: discord.Object
             updated_content = current_content[:start_index] + ' ' + new_price + current_content[next_marker_pos:]
             
             # Update the message
-            await parent_message.edit(content=updated_content)
+            await event_message.edit(content=updated_content)
             await interaction.response.send_message(f"Price updated: {new_price}", ephemeral=True)
             
         except discord.HTTPException as e:
@@ -223,15 +227,15 @@ def register_event_editing(tree: app_commands.CommandTree, guild: discord.Object
 
     @tree.command(
         name="change_notes",
-        description="Change the notes for the event in the current thread",
+        description="Change the notes for the event in the current channel",
         guild=guild
     )
     @app_commands.describe(
     )
     async def change_notes(interaction: discord.Interaction) -> None:
         """Change the event notes"""
-        if not isinstance(interaction.channel, discord.Thread):
-            await interaction.response.send_message("This command can only be used in event threads.", ephemeral=True)
+        if isinstance(interaction.channel, discord.Thread):
+            await interaction.response.send_message("This command cannot be used in threads.", ephemeral=True)
             return
             
         try:
@@ -258,15 +262,16 @@ def register_event_editing(tree: app_commands.CommandTree, guild: discord.Object
                 new_notes = response.content.strip()
                 
                 # Get parent message
-                thread = interaction.channel
-                parent_message = await get_parent_message(thread)
+                channel = interaction.channel
+                messages = [msg async for msg in channel.history(limit=1, oldest_first=True)]
+                event_message = messages[0] if messages else None
                 
-                if not parent_message:
+                if not event_message:
                     await dm_channel.send("Could not find the event message.")
                     return
                     
                 # Update notes in message
-                current_content = parent_message.content
+                current_content = event_message.content
                 notes_header = "**:pencil: Notes:**"
                 start_index = current_content.find(notes_header) + len(notes_header)
                 
@@ -278,11 +283,11 @@ def register_event_editing(tree: app_commands.CommandTree, guild: discord.Object
                     updated_content = current_content[:start_index] + "\n" + new_notes
                 
                 # Update the message
-                await parent_message.edit(content=updated_content)
+                await event_message.edit(content=updated_content)
                 await dm_channel.send("Notes updated successfully!")
                 
-                # Notify in thread that notes were updated
-                # await thread.send(f"{user.mention} has updated the event notes.")
+                # Notify in channel that notes were updated
+                # await channel.send(f"{user.mention} has updated the event notes.")
                 
             except asyncio.TimeoutError:
                 await dm_channel.send("You didn't respond in time. Please try the command again when ready.")
@@ -294,7 +299,7 @@ def register_event_editing(tree: app_commands.CommandTree, guild: discord.Object
 
     @tree.command(
         name="change_emoji",
-        description="Change the emoji for the event in the current thread",
+        description="Change the emoji for the event in the current channel",
         guild=guild
     )
     @app_commands.describe(
@@ -302,21 +307,22 @@ def register_event_editing(tree: app_commands.CommandTree, guild: discord.Object
     )
     async def change_emoji(interaction: discord.Interaction, new_emoji: str) -> None:
         """Change the event emoji"""
-        if not isinstance(interaction.channel, discord.Thread):
-            await interaction.response.send_message("This command can only be used in event threads.", ephemeral=True)
+        if isinstance(interaction.channel, discord.Thread):
+            await interaction.response.send_message("This command cannot be used in threads.", ephemeral=True)
             return
             
         try:
             # Get parent message
-            thread = interaction.channel
-            parent_message = await get_parent_message(thread)
+            channel = interaction.channel
+            messages = [msg async for msg in channel.history(limit=1, oldest_first=True)]
+            event_message = messages[0] if messages else None
             
-            if not parent_message:
+            if not event_message:
                 await interaction.response.send_message("Could not find the event message.", ephemeral=True)
                 return
                 
             # Update emoji in message
-            current_content = parent_message.content
+            current_content = event_message.content
             
             # Find the first bold section containing the emoji and event name
             first_bold_start = current_content.find('**')
@@ -340,7 +346,7 @@ def register_event_editing(tree: app_commands.CommandTree, guild: discord.Object
             )
             
             # Update the message
-            await parent_message.edit(content=updated_content)
+            await event_message.edit(content=updated_content)
             await interaction.response.send_message(f"Emoji updated to {new_emoji}", ephemeral=True)
             
         except discord.HTTPException as e:

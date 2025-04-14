@@ -4,7 +4,6 @@ RSVP command for events
 import discord
 from discord import app_commands
 import logging
-from utils.thread_utils import get_parent_message
 
 logger = logging.getLogger('event_bot')
 
@@ -21,27 +20,27 @@ def register_rsvp(tree: app_commands.CommandTree, guild: discord.Object) -> None
     )
     async def rsvp(interaction: discord.Interaction, response: str) -> None:
         """Update RSVP status for a user"""
-        if not isinstance(interaction.channel, discord.Thread):
-            await interaction.response.send_message("This command can only be used in event threads.", ephemeral=True)
+        if isinstance(interaction.channel, discord.Thread):
+            await interaction.response.send_message("This command cannot be used in threads.", ephemeral=True)
             return
             
-        # Validate response
         valid_responses = {"yes", "no", "maybe"}
         if response.lower() not in valid_responses:
             await interaction.response.send_message("Invalid response. Please use yes, no, or maybe.", ephemeral=True)
             return
             
         try:
-            # Get parent message
-            thread = interaction.channel
-            parent_message = await get_parent_message(thread)
+            # Get the event message - first message in channel
+            channel = interaction.channel
+            messages = [msg async for msg in channel.history(limit=1, oldest_first=True)]
+            event_message = messages[0] if messages else None
             
-            if not parent_message:
+            if not event_message:
                 await interaction.response.send_message("Could not find the event message.", ephemeral=True)
                 return
                 
             # Update RSVP sections
-            current_content = parent_message.content
+            current_content = event_message.content
             user_mention = interaction.user.mention
             
             # Define section markers and their display names
@@ -111,9 +110,15 @@ def register_rsvp(tree: app_commands.CommandTree, guild: discord.Object) -> None
                 current_content = current_content[:section_start] + section_content + current_content[section_end:]
             
             # Update the message
-            await parent_message.edit(content=current_content)
+            await event_message.edit(content=current_content)
             await interaction.response.send_message(f"RSVP updated: {response.capitalize()}", ephemeral=True)
             
         except discord.HTTPException as e:
             logger.error(f"Failed to update RSVP: {e}")
             await interaction.response.send_message("Failed to update RSVP. Please try again.", ephemeral=True)
+        except IndexError:
+            logger.error("No messages found in channel")
+            await interaction.response.send_message("Could not find any messages in this channel.", ephemeral=True)
+        except Exception as e:
+            logger.error(f"Unexpected error updating RSVP: {e}")
+            await interaction.response.send_message("An unexpected error occurred. Please try again later.", ephemeral=True)
