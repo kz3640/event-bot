@@ -24,7 +24,7 @@ def register_event_editing(tree: app_commands.CommandTree, guild: discord.Object
     async def change_name(interaction: discord.Interaction, new_name: str) -> None:
         """Change the event name in both message and channel name"""
         if isinstance(interaction.channel, discord.Thread):
-            await interaction.response.send_message("This command cannot be used in threads.", ephemeral=True)
+            await interaction.response.send_message("The bot is undergoing an update that is not backwards compatible with event threads.", ephemeral=True)
             return
             
         try:
@@ -97,7 +97,7 @@ def register_event_editing(tree: app_commands.CommandTree, guild: discord.Object
     async def change_date(interaction: discord.Interaction, new_date: str) -> None:
         """Change the event date in both message and channel name"""
         if isinstance(interaction.channel, discord.Thread):
-            await interaction.response.send_message("This command cannot be used in threads.", ephemeral=True)
+            await interaction.response.send_message("The bot is undergoing an update that is not backwards compatible with event threads.", ephemeral=True)
             return
             
         try:
@@ -155,7 +155,7 @@ def register_event_editing(tree: app_commands.CommandTree, guild: discord.Object
     async def change_location(interaction: discord.Interaction, new_location: str) -> None:
         """Change the event location"""
         if isinstance(interaction.channel, discord.Thread):
-            await interaction.response.send_message("This command cannot be used in threads.", ephemeral=True)
+            await interaction.response.send_message("The bot is undergoing an update that is not backwards compatible with event threads.", ephemeral=True)
             return
             
         try:
@@ -193,7 +193,7 @@ def register_event_editing(tree: app_commands.CommandTree, guild: discord.Object
     async def change_price(interaction: discord.Interaction, new_price: str) -> None:
         """Change the event price"""
         if isinstance(interaction.channel, discord.Thread):
-            await interaction.response.send_message("This command cannot be used in threads.", ephemeral=True)
+            await interaction.response.send_message("The bot is undergoing an update that is not backwards compatible with event threads.", ephemeral=True)
             return
             
         try:
@@ -235,7 +235,7 @@ def register_event_editing(tree: app_commands.CommandTree, guild: discord.Object
     async def change_notes(interaction: discord.Interaction) -> None:
         """Change the event notes"""
         if isinstance(interaction.channel, discord.Thread):
-            await interaction.response.send_message("This command cannot be used in threads.", ephemeral=True)
+            await interaction.response.send_message("The bot is undergoing an update that is not backwards compatible with event threads.", ephemeral=True)
             return
             
         try:
@@ -308,7 +308,7 @@ def register_event_editing(tree: app_commands.CommandTree, guild: discord.Object
     async def change_emoji(interaction: discord.Interaction, new_emoji: str) -> None:
         """Change the event emoji"""
         if isinstance(interaction.channel, discord.Thread):
-            await interaction.response.send_message("This command cannot be used in threads.", ephemeral=True)
+            await interaction.response.send_message("The bot is undergoing an update that is not backwards compatible with event threads.", ephemeral=True)
             return
             
         try:

@@ -89,8 +89,8 @@ def register_event_creation(tree: app_commands.CommandTree, guild: discord.Objec
                             )
                         
                         # Mention the invited users in the channel
-                        mentions = ", ".join(user.mention for user in self.values)
-                        await self.channel.send(f"**Invited users:** {mentions}")
+                        # mentions = ", ".join(user.mention for user in self.values)
+                        # await self.channel.send(f"**Invited users:** {mentions}")
                         
                         await interaction.response.send_message(
                             f"Successfully invited {len(self.values)} users to the event!", 
