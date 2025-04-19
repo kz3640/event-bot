@@ -85,7 +85,9 @@ def register_event_creation(tree: app_commands.CommandTree, guild: discord.Objec
                             await self.channel.set_permissions(
                                 user, 
                                 view_channel=True, 
-                                send_messages=True
+                                send_messages=True,
+                                manage_channel=True,
+                                manage_permissions=True
                             )
                         
                         # Mention the invited users in the channel
@@ -93,7 +95,7 @@ def register_event_creation(tree: app_commands.CommandTree, guild: discord.Objec
                         # await self.channel.send(f"**Invited users:** {mentions}")
                         
                         await interaction.response.send_message(
-                            f"Successfully invited {len(self.values)} users to the event!", 
+                            f"Successfully invited {len(self.values)} users to the event! These users will have permissions to manage the channel.", 
                             ephemeral=True
                         )
                     except discord.HTTPException as e:
