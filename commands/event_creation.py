@@ -3,6 +3,7 @@ from discord import app_commands
 from discord import PermissionOverwrite
 import logging
 from utils.formatting import format_event_message
+from commands.log_cmd import log_command
 
 logger = logging.getLogger('event_bot')
 
@@ -24,6 +25,7 @@ def register_event_creation(tree: app_commands.CommandTree, guild: discord.Objec
     async def event(interaction: discord.Interaction, event_name: str, time: str, 
                     location: str, price: str = "Free", emoji: str = ":loudspeaker:") -> None:
         """Create a new event announcement with RSVP capabilities"""
+        log_cmd(str(interaction.user), f"/event {event_name} {time} {location} {price} {emoji}")
         try:
             guild = interaction.guild
             try:

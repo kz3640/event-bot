@@ -1,15 +1,15 @@
 """
-RSVP command for events
+RSVP command for events - with optional user mention support
 """
 import discord
 from discord import app_commands
 import logging
+from commands.log_cmd import log_command
 
 logger = logging.getLogger('event_bot')
 
 def register_rsvp(tree: app_commands.CommandTree, guild: discord.Object) -> None:
     """Register the RSVP command"""
-    
     @tree.command(
         name="rsvp",
         description="RSVP for the event by choosing yes, no, or maybe",
@@ -17,9 +17,11 @@ def register_rsvp(tree: app_commands.CommandTree, guild: discord.Object) -> None
     )
     @app_commands.describe(
         response="Your RSVP response (yes, no, maybe)",
+        user="Optional: The user to RSVP for (if not provided, RSVPs for yourself)"
     )
-    async def rsvp(interaction: discord.Interaction, response: str) -> None:
-        """Update RSVP status for a user"""
+    async def rsvp(interaction: discord.Interaction, response: str, user: discord.Member = None) -> None:
+        """Update RSVP status for a user or yourself"""
+        log_command(str(interaction.user), f"/rsvp {str(response)} {str(user)}")
         if isinstance(interaction.channel, discord.Thread):
             await interaction.response.send_message("The bot is undergoing an update that is not backwards compatible with event threads.", ephemeral=True)
             return
@@ -28,7 +30,11 @@ def register_rsvp(tree: app_commands.CommandTree, guild: discord.Object) -> None
         if response.lower() not in valid_responses:
             await interaction.response.send_message("Invalid response. Please use yes, no, or maybe.", ephemeral=True)
             return
-            
+        
+        # Determine which user to RSVP for
+        target_user = user if user else interaction.user
+        
+        # Check if the user has permission to RSVP for others
         try:
             # Get the event message - first message in channel
             channel = interaction.channel
@@ -41,7 +47,7 @@ def register_rsvp(tree: app_commands.CommandTree, guild: discord.Object) -> None
                 
             # Update RSVP sections
             current_content = event_message.content
-            user_mention = interaction.user.mention
+            user_mention = target_user.mention
             
             # Define section markers and their display names
             sections = {
@@ -111,7 +117,14 @@ def register_rsvp(tree: app_commands.CommandTree, guild: discord.Object) -> None
             
             # Update the message
             await event_message.edit(content=current_content)
-            await interaction.response.send_message(f"RSVP updated: {response.capitalize()}", ephemeral=True)
+            
+            # Create appropriate response message
+            if user and user != interaction.user:
+                response_msg = f"Updated {user.display_name}'s RSVP to: {response.capitalize()}"
+            else:
+                response_msg = f"RSVP updated: {response.capitalize()}"
+            
+            await interaction.response.send_message(response_msg, ephemeral=True)
             
         except discord.HTTPException as e:
             logger.error(f"Failed to update RSVP: {e}")
