@@ -21,7 +21,7 @@ def register_rsvp(tree: app_commands.CommandTree, guild: discord.Object) -> None
     )
     async def rsvp(interaction: discord.Interaction, response: str, user: discord.Member = None) -> None:
         """Update RSVP status for a user or yourself"""
-        log_command(str(interaction.user), f"/rsvp {str(response)} {str(user)}")
+        log_command(str(interaction.user), interaction.channel.name, f"/rsvp {str(response)} {str(user)}")
         if isinstance(interaction.channel, discord.Thread):
             await interaction.response.send_message("The bot is undergoing an update that is not backwards compatible with event threads.", ephemeral=True)
             return

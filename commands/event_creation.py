@@ -25,7 +25,7 @@ def register_event_creation(tree: app_commands.CommandTree, guild: discord.Objec
     async def event(interaction: discord.Interaction, event_name: str, time: str, 
                     location: str, price: str = "Free", emoji: str = ":loudspeaker:") -> None:
         """Create a new event announcement with RSVP capabilities"""
-        log_cmd(str(interaction.user), f"/event {event_name} {time} {location} {price} {emoji}")
+        log_command(str(interaction.user), interaction.channel.name, f"/event {event_name} {time} {location} {price} {emoji}")
         try:
             guild = interaction.guild
             try:

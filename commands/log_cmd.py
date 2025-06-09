@@ -10,6 +10,6 @@ logging.basicConfig(
 )
 
 # Function to log commands
-def log_command(user, command):
-    logging.info(f"{user}-{command}")
+def log_command(user, channel, command):
+    logging.info(f"{user}-{channel}-{command}")
 
